@@ -65,6 +65,14 @@
     .file-drop:hover{background:#e8f5e9;}
     .file-drop p{font-size:13px;color:#555;}
     .file-drop .icon{font-size:28px;margin-bottom:6px;}
+
+    .fisa-item{background:#f9f9f9;border:1px solid #e0e0e0;border-radius:8px;padding:10px 12px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:8px;}
+    .fisa-item-info{font-size:13px;font-weight:600;color:#1b5e2e;}
+    .fisa-item-sub{font-size:11px;color:#888;margin-top:2px;}
+    .fisa-item-btns{display:flex;gap:6px;flex-shrink:0;}
+    .btn-fisa{padding:5px 10px;font-size:12px;border:none;border-radius:6px;cursor:pointer;font-weight:500;}
+    .btn-fisa-load{background:#e8f5e9;color:#1b5e2e;}
+    .btn-fisa-del{background:#ffebee;color:#c62828;}
     /* SPLASH SCREEN */
     #splash{position:fixed;inset:0;background:#1b5e2e;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:99999;transition:opacity 0.6s ease;}
     #splash.hide{opacity:0;pointer-events:none;}
@@ -99,7 +107,8 @@
   <div class="ntab" onclick="goTab(3)">Arboret</div>
   <div class="ntab" onclick="goTab(4)">Semințiș</div>
   <div class="ntab" onclick="goTab(5)">Elemente</div>
-  <div class="ntab" onclick="goTab(6)">Export</div>
+  <div class="ntab" onclick="goTab(6)">Listă Fișe</div>
+  <div class="ntab" onclick="goTab(7)">Export</div>
 </div>
 
 <div class="content">
@@ -300,17 +309,34 @@
     </div>
   </div>
 
-  <!-- TAB 6: EXPORT -->
+  <!-- TAB 6: LISTA FISE -->
   <div class="section" id="s6">
     <div class="card">
-      <div class="card-title">Export & Salvare</div>
-      <p style="font-size:13px;color:#666;line-height:1.7;margin-bottom:14px;">
-        Exportul generează formularul vizual identic cu originalul — rânduri și coloane cu borduri verzi, texte centrate.
-      </p>
-      <button class="btn btn-green" onclick="exportFormular()">📋 Exportă Formular (vizual)</button>
+      <div class="card-title">📋 Fișa curentă</div>
+      <p style="font-size:13px;color:#666;margin-bottom:12px;">Completează datele în celelalte tab-uri, apoi salvează fișa în listă.</p>
+      <button class="btn btn-green" onclick="saveFisaInList()">➕ Salvează fișa curentă în listă</button>
+      <button class="btn btn-outline" onclick="clearAll()">🔄 Fișă nouă (golește formularul)</button>
+    </div>
+    <div class="card">
+      <div class="card-title">📂 Liste fișe salvate (<span id="lista-count">0</span>)</div>
+      <div id="lista-fise" style="margin-top:8px;"></div>
+      <p id="lista-empty" style="font-size:13px;color:#999;text-align:center;padding:20px 0;">Nu există fișe salvate în listă.</p>
+    </div>
+  </div>
+
+  <!-- TAB 7: EXPORT -->
+  <div class="section" id="s7">
+    <div class="card">
+      <div class="card-title">Export fișă curentă</div>
+      <button class="btn btn-green" onclick="exportFormular()">📋 Exportă Formular vizual</button>
       <button class="btn btn-outline" onclick="manualSave()">💾 Salvează date (JSON)</button>
       <button class="btn btn-outline" onclick="document.getElementById('file-load').click()">📂 Încarcă date salvate</button>
-      <button class="btn btn-red" onclick="clearAll()">🗑️ Șterge tot</button>
+    </div>
+    <div class="card">
+      <div class="card-title">Export toate fișele din listă</div>
+      <p style="font-size:13px;color:#666;margin-bottom:12px;">Generează un singur OSxxxA.xls și OSxxxS.xls cu toate UA-urile din listă.</p>
+      <button class="btn btn-green" onclick="exportXLSLista()">📊 Generează OSxxxA + OSxxxS din listă</button>
+      <button class="btn btn-green" onclick="exportXLS()">📊 Generează XLS din fișa curentă</button>
     </div>
     <div class="card">
       <div class="card-title">Status</div>
@@ -585,6 +611,7 @@ function addElm(){
         <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;">
           <div class="field"><span class="lbl">ELEMENT (ELM)</span><input type="text" id="e-elm${n}"></div>
           <div class="field"><span class="lbl">M R G</span><input type="text" id="e-mrg${n}"></div>
+          <div class="field"><span class="lbl">S P R</span><input type="number" step="0.01" id="e-spf${n}"></div>
         </div>
       </div>
       <div class="grp">
@@ -689,7 +716,7 @@ function exportFormular(){
 
 <table><tr>
   ${td('ISJ',v('isj'))}${td('O.S.',v('adm'))}${td('U.P.',v('up'))}
-  ${tdw('U.A.',v('ua1')+v('ua2'),2)}
+  ${tdw('U.A.','<strong style="font-size:11px;color:#1b5e2e;">'+v('ua1')+v('ua2')+'</strong>',2)}
   ${td('DEC1',v('dec1'))}${td('DEC2',v('dec2'))}${td('DEC3',v('dec3'))}
   ${td('SUP',v('sup'))}${td('FF',v('ff'))}${td('SPR',v('spr'))}
   ${td('FLS',v('fls'))}${td('GF',v('gf'))}
@@ -834,12 +861,245 @@ function showToast(msg){
   setTimeout(()=>t.classList.remove('show'),2500);
 }
 
+
+function exportXLS(){
+  const d = collectData();
+  const v = (k) => d[k] || '';
+  const adm = v('adm') || '1';
+  const up = v('up') || '1';
+  const ua1 = v('ua1') || '';
+  const ua2 = v('ua2') || '';
+  const osCode = 'OS' + String(adm).padStart(2,'0') + String(up).padStart(2,'0') + String(ua1).padStart(2,'0');
+
+  // ===== OSxxxA row =====
+  const rowA = {
+    adm, up, ua1, ua2,
+    dec1: v('dec1'), dec2: v('dec2'), dec3: v('dec3'),
+    sup: v('sup'), ff: v('ff'), spr: v('spr'), fls: v('fls'), gf: v('gf'),
+    fct1: v('fct1'), fct2: v('fct2'), fct3: v('fct3'),
+    rlf: v('rlf'), cnf: v('cnf'), exp: v('exp'), inc: v('inc'),
+    alt1: v('alt1'), alt2: v('alt2'), sol: v('sol'), erz: v('erz'), flr: v('flr'),
+    ts: v('ts'), inv: v('inv'), tp: v('tp'), crti: v('crti'),
+    pol1: v('pol1'), pol2: v('pol2'), pol3: v('pol3'), lit: v('lit'),
+    drm: v('drm'), dst: v('dst'), str: v('str'), cns: v('cns'), clp: v('clp'),
+    ta: v('ta'), reg: v('reg'), te: v('te'), ex: v('ex'), urg: v('urg'),
+    prm: v('prm'), nin: v('nin'), nid: v('nid'),
+    lx1: v('lx1'), lx2: v('lx2'), lp1: v('lp1'), lp2: v('lp2'), lp3: v('lp3'),
+    dc1: v('dc1'), dc2: v('dc2'), dc3: v('dc3'), dc4: v('dc4'),
+    sba: v('sba'), so: v('so'), mr: v('mr'), ds: v('ds'),
+    cel1: (()=>{
+      // compozitie tel - primul element
+      const el = document.getElementById('e-elm1');
+      return el ? (document.getElementById('e-elm1') ? document.getElementById('e-elm1').value : '') : '';
+    })(),
+    cpr1: v('e-prp1') || '',
+    cel: v('ctel') || '',
+    vs: v('vs'), soc: v('soc'), rs: v('rs'), nrs: v('nrs'),
+    mel1: '', mpr1: '', mel: ''
+  };
+
+  // compozitie tel din elemente
+  let celParts = [];
+  for(let i=1;i<=10;i++){
+    const elm = v('e-elm'+i);
+    const prp = v('e-prp'+i);
+    if(elm) celParts.push((prp?prp:'') + elm);
+  }
+  rowA.cel = celParts.join(' ') || v('ctel') || '';
+
+  // ===== OSxxxS rows (un rand per element) =====
+  const rowsS = [];
+  for(let i=1;i<=10;i++){
+    const elm = v('e-elm'+i);
+    if(!elm) continue;
+    rowsS.push({
+      adm, up, ua1, ua2,
+      elm,
+      mrg: v('e-mrg'+i),
+      prov: v('e-prov'+i),
+      prp: v('e-prp'+i),
+      spf: v('e-spf'+i),
+      vrt: v('e-vrt'+i),
+      ams: v('e-ams'+i),
+      elg: v('e-elg'+i),
+      vit: v('e-vi'+i),
+      tel: v('e-tel'+i),
+      cal: v('e-cal'+i),
+      pex1: v('e-px1'+i),
+      pex2: v('e-px2'+i),
+      pex3: v('e-px3'+i),
+      dm: v('e-dm'+i),
+      dmc: '',
+      hm: v('e-hm'+i),
+      hmc: '',
+      m: v('e-m'+i),
+      hsi: '',
+      cp: v('e-cp'+i),
+      cpc: '',
+      vol: v('e-vol'+i),
+      crs: v('e-crs'+i),
+      crsc: '',
+      vexpr: '', vexra: '', vexcu: '', vexig: '', vextc: ''
+    });
+  }
+
+  // ===== Build workbooks =====
+  const wbA = XLSX.utils.book_new();
+  const wsA = XLSX.utils.json_to_sheet([rowA]);
+  XLSX.utils.book_append_sheet(wbA, wsA, 'Sheet1');
+
+  const wbS = XLSX.utils.book_new();
+  const wsS = XLSX.utils.json_to_sheet(rowsS.length ? rowsS : [{}]);
+  XLSX.utils.book_append_sheet(wbS, wsS, 'Sheet1');
+
+  // Download both
+  XLSX.writeFile(wbA, osCode + 'A.xls');
+  setTimeout(() => XLSX.writeFile(wbS, osCode + 'S.xls'), 500);
+  showToast('✓ Fișiere generate: ' + osCode + 'A.xls + ' + osCode + 'S.xls');
+}
+
+// ===== LISTA FISE =====
+const LKEY = 'forestral_lista_v1';
+
+function getLista(){
+  try{ return JSON.parse(localStorage.getItem(LKEY)) || []; }catch{ return []; }
+}
+
+function saveListaStorage(lista){
+  localStorage.setItem(LKEY, JSON.stringify(lista));
+}
+
+function saveFisaInList(){
+  const data = collectData();
+  const ua1 = data.ua1 || '';
+  const ua2 = data.ua2 || '';
+  const up = data.up || '';
+  if(!ua1){ showToast('Completează cel puțin UA înainte de a salva!'); return; }
+  const lista = getLista();
+  const label = 'UP ' + up + ' UA ' + ua1 + (ua2 ? ua2 : '');
+  // Check if already exists, update
+  const idx = lista.findIndex(f => f.ua1 === ua1 && f.ua2 === ua2 && f.up === up);
+  const entry = { id: Date.now(), label, ua1, ua2, up, data, savedAt: new Date().toLocaleString('ro-RO') };
+  if(idx >= 0){ lista[idx] = entry; showToast('✓ Fișa ' + label + ' actualizată în listă'); }
+  else{ lista.push(entry); showToast('✓ Fișa ' + label + ' adăugată în listă'); }
+  saveListaStorage(lista);
+  renderLista();
+}
+
+function renderLista(){
+  const lista = getLista();
+  const cont = document.getElementById('lista-fise');
+  const empty = document.getElementById('lista-empty');
+  const count = document.getElementById('lista-count');
+  if(!cont) return;
+  count.textContent = lista.length;
+  if(lista.length === 0){ cont.innerHTML=''; empty.style.display='block'; return; }
+  empty.style.display='none';
+  cont.innerHTML = lista.map((f,i) => `
+    <div class="fisa-item">
+      <div>
+        <div class="fisa-item-info">🌲 ${f.label}</div>
+        <div class="fisa-item-sub">Salvat: ${f.savedAt}</div>
+      </div>
+      <div class="fisa-item-btns">
+        <button class="btn-fisa btn-fisa-load" onclick="loadFisaFromList(${i})">📂 Încarcă</button>
+        <button class="btn-fisa btn-fisa-del" onclick="deleteFisaFromList(${i})">🗑️</button>
+      </div>
+    </div>`).join('');
+}
+
+function loadFisaFromList(i){
+  const lista = getLista();
+  if(!lista[i]) return;
+  if(confirm('Încarci fișa ' + lista[i].label + '? Datele curente nesalvate se pierd.')){
+    restoreData(lista[i].data);
+    showToast('✓ Fișa ' + lista[i].label + ' încărcată');
+    goTab(1);
+  }
+}
+
+function deleteFisaFromList(i){
+  const lista = getLista();
+  if(!lista[i]) return;
+  if(confirm('Ștergi fișa ' + lista[i].label + ' din listă?')){
+    lista.splice(i,1);
+    saveListaStorage(lista);
+    renderLista();
+    showToast('✓ Fișă ștearsă');
+  }
+}
+
+function buildRowA(data){
+  const v = k => data[k] || '';
+  let celParts = [];
+  for(let i=1;i<=10;i++){ const elm=v('e-elm'+i),prp=v('e-prp'+i); if(elm) celParts.push((prp?prp:'')+elm); }
+  return {
+    adm:v('adm'),up:v('up'),ua1:v('ua1'),ua2:v('ua2'),
+    dec1:v('dec1'),dec2:v('dec2'),dec3:v('dec3'),
+    sup:v('sup'),ff:v('ff'),spr:v('spr'),fls:v('fls'),gf:v('gf'),
+    fct1:v('fct1'),fct2:v('fct2'),fct3:v('fct3'),
+    rlf:v('rlf'),cnf:v('cnf'),exp:v('exp'),inc:v('inc'),
+    alt1:v('alt1'),alt2:v('alt2'),sol:v('sol'),erz:v('erz'),flr:v('flr'),
+    ts:v('ts'),inv:v('inv'),tp:v('tp'),crti:v('crti'),
+    pol1:v('pol1'),pol2:v('pol2'),pol3:v('pol3'),lit:v('lit'),
+    drm:v('drm'),dst:v('dst'),str:v('str'),cns:v('cns'),clp:v('clp'),
+    ta:v('ta'),reg:v('reg'),te:v('te'),ex:v('ex'),urg:v('urg'),
+    prm:v('prm'),nin:v('nin'),nid:v('nid'),
+    lx1:v('lx1'),lx2:v('lx2'),lp1:v('lp1'),lp2:v('lp2'),lp3:v('lp3'),
+    dc1:v('dc1'),dc2:v('dc2'),dc3:v('dc3'),dc4:v('dc4'),
+    sba:v('sba'),so:v('so'),mr:v('mr'),ds:v('ds'),
+    cel1:v('e-elm1'),cpr1:v('e-prp1'),
+    cel:celParts.join(' ')||v('ctel')||'',
+    vs:v('vs'),soc:v('soc'),rs:v('rs'),nrs:v('nrs'),
+    mel1:'',mpr1:'',mel:''
+  };
+}
+
+function buildRowsS(data){
+  const v = k => data[k] || '';
+  const rows = [];
+  for(let i=1;i<=10;i++){
+    const elm=v('e-elm'+i); if(!elm) continue;
+    rows.push({
+      adm:v('adm'),up:v('up'),ua1:v('ua1'),ua2:v('ua2'),
+      elm,mrg:v('e-mrg'+i),prov:v('e-prov'+i),prp:v('e-prp'+i),
+      spf:v('e-spf'+i),vrt:v('e-vrt'+i),ams:v('e-ams'+i),elg:v('e-elg'+i),
+      vit:v('e-vi'+i),tel:v('e-tel'+i),cal:v('e-cal'+i),
+      pex1:v('e-px1'+i),pex2:v('e-px2'+i),pex3:v('e-px3'+i),
+      dm:v('e-dm'+i),dmc:'',hm:v('e-hm'+i),hmc:'',m:v('e-m'+i),
+      hsi:'',cp:v('e-cp'+i),cpc:'',vol:v('e-vol'+i),
+      crs:v('e-crs'+i),crsc:'',vexpr:'',vexra:'',vexcu:'',vexig:'',vextc:''
+    });
+  }
+  return rows;
+}
+
+function exportXLSLista(){
+  const lista = getLista();
+  if(lista.length === 0){ showToast('Lista e goală! Adaugă fișe mai întâi.'); return; }
+  const allA = lista.map(f => buildRowA(f.data));
+  const allS = lista.flatMap(f => buildRowsS(f.data));
+  const d0 = lista[0].data;
+  const adm = d0.adm || '1';
+  const up = d0.up || '1';
+  const osCode = 'OS' + String(adm).padStart(2,'0') + String(up).padStart(2,'0');
+  const wbA = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wbA, XLSX.utils.json_to_sheet(allA), 'Sheet1');
+  const wbS = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wbS, XLSX.utils.json_to_sheet(allS.length ? allS : [{}]), 'Sheet1');
+  XLSX.writeFile(wbA, osCode + 'A.xls');
+  setTimeout(() => XLSX.writeFile(wbS, osCode + 'S.xls'), 500);
+  showToast('✓ Export ' + lista.length + ' fișe: ' + osCode + 'A.xls + ' + osCode + 'S.xls');
+}
+
+
 document.addEventListener('input', saveAuto);
 document.addEventListener('change', saveAuto);
 window.addEventListener('DOMContentLoaded',()=>{
   const raw=localStorage.getItem(SKEY);
   if(raw){ try{ restoreData(JSON.parse(raw)); }catch{} }
   else { addComp();addComp();addSem();addElm(); }
+  renderLista();
 });
 </script>
 
