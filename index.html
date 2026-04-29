@@ -283,11 +283,11 @@
       <div class="field"><label>VS</label><input type="text" id="vs"></div>
       <div id="sem-cont" style="margin-top:10px;"></div>
       <button class="btn-add" onclick="addSem()">+ Adaugă specie</button>
-      <div style="margin-top:12px;" class="r3">
+      <div style="margin-top:12px;" class="r2">
         <div class="field"><label>SOC</label><input type="text" id="soc"></div>
         <div class="field"><label>RS</label><input type="text" id="rs"></div>
-        <div class="field"><label>NRS</label><input type="text" id="nrs"></div>
       </div>
+      <div class="field"><label>NRS</label><input type="text" id="nrs"></div>
     </div>
   </div>
 
@@ -727,7 +727,7 @@ function exportFormular(){
 
 <table>
   <tr><td colspan="100%" class="rtitle">S E M I N Ț I Ș &nbsp; U T I L I Z A B I L</td></tr>
-  <tr>${td('VS',v('vs'))}${semCells}${td('SOC',v('soc'))}${td('RS',v('rs'))}</tr>
+  <tr>${td('VS',v('vs'))}${semCells}${td('SOC',v('soc'))}${td('RS',v('rs'))}${td('NRS',v('nrs'))}</tr>
 </table>
 
 <table>
