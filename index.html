@@ -550,6 +550,16 @@ function selectUA(key){
     setVal('e-ams'+n, row.ams);
     setVal('e-elg'+n, row.elg);
     setVal('e-vi'+n, row.vit);
+    setVal('e-dmc'+n, row.dmc);
+    setVal('e-hmc'+n, row.hmc);
+    setVal('e-hsi'+n, row.hsi);
+    setVal('e-cpc'+n, row.cpc);
+    setVal('e-crsc'+n, row.crsc);
+    setVal('e-vexpr'+n, row.vexpr);
+    setVal('e-vexra'+n, row.vexra);
+    setVal('e-vexcu'+n, row.vexcu);
+    setVal('e-vexig'+n, row.vexig);
+    setVal('e-vextc'+n, row.vextc);
     setVal('e-tel'+n, row.tel);
     setVal('e-cal'+n, row.cal);
     setVal('e-vol'+n, row.vol);
@@ -624,12 +634,16 @@ function addElm(){
           <div class="field"><span class="lbl">DIAM. (DM) cm</span><input type="number" id="e-dm${n}"></div>
           <div class="field"><span class="lbl">INAL. (HM) m</span><input type="number" id="e-hm${n}"></div>
           <div class="field"><span class="lbl">M</span><input type="text" id="e-m${n}"></div>
+          <div class="field"><span class="lbl">D M C</span><input type="number" step="0.1" id="e-dmc${n}"></div>
+          <div class="field"><span class="lbl">H M C</span><input type="number" step="0.1" id="e-hmc${n}"></div>
+          <div class="field"><span class="lbl">H S I</span><input type="number" step="0.1" id="e-hsi${n}"></div>
         </div>
       </div>
       <div class="grp">
         <span class="grplbl">Coloane specifice</span>
         <div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;">
           <div class="field"><span class="lbl">C P</span><input type="text" id="e-cp${n}"></div>
+          <div class="field"><span class="lbl">C P C</span><input type="number" step="0.01" id="e-cpc${n}"></div>
           <div class="field"><span class="lbl">A M S</span><input type="text" id="e-ams${n}"></div>
           <div class="field"><span class="lbl">E L G</span><input type="text" id="e-elg${n}"></div>
           <div class="field"><span class="lbl">V I</span><input type="text" id="e-vi${n}"></div>
@@ -642,6 +656,7 @@ function addElm(){
           <div class="field"><span class="lbl">CALIT. (CAL)</span><input type="text" id="e-cal${n}"></div>
           <div class="field"><span class="lbl">VOLUM/HA</span><input type="number" id="e-vol${n}"></div>
           <div class="field"><span class="lbl">CREȘTERE (CRS)</span><input type="number" id="e-crs${n}"></div>
+          <div class="field"><span class="lbl">C R S C</span><input type="number" step="0.01" id="e-crsc${n}"></div>
         </div>
       </div>
       <div class="grp">
@@ -650,6 +665,16 @@ function addElm(){
           <div class="field"><span class="lbl">PEX 1</span><input type="number" id="e-px1${n}"></div>
           <div class="field"><span class="lbl">PEX 2</span><input type="number" id="e-px2${n}"></div>
           <div class="field"><span class="lbl">PEX 3</span><input type="number" id="e-px3${n}"></div>
+        </div>
+      </div>
+      <div class="grp">
+        <span class="grplbl">Volum extras (VEX)</span>
+        <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;">
+          <div class="field"><span class="lbl">VEXPR</span><input type="number" id="e-vexpr${n}"></div>
+          <div class="field"><span class="lbl">VEXRA</span><input type="number" id="e-vexra${n}"></div>
+          <div class="field"><span class="lbl">VEXCU</span><input type="number" id="e-vexcu${n}"></div>
+          <div class="field"><span class="lbl">VEXIG</span><input type="number" id="e-vexig${n}"></div>
+          <div class="field"><span class="lbl">VEXTC</span><input type="number" id="e-vextc${n}"></div>
         </div>
       </div>
       <div class="grp">
@@ -929,17 +954,17 @@ function exportXLS(){
       pex2: v('e-px2'+i),
       pex3: v('e-px3'+i),
       dm: v('e-dm'+i),
-      dmc: '',
+      dmc: v('e-dmc'+i),
       hm: v('e-hm'+i),
-      hmc: '',
+      hmc: v('e-hmc'+i),
       m: v('e-m'+i),
-      hsi: '',
+      hsi: v('e-hsi'+i),
       cp: v('e-cp'+i),
-      cpc: '',
+      cpc: v('e-cpc'+i),
       vol: v('e-vol'+i),
       crs: v('e-crs'+i),
-      crsc: '',
-      vexpr: '', vexra: '', vexcu: '', vexig: '', vextc: ''
+      crsc: v('e-crsc'+i),
+      vexpr: v('e-vexpr'+i), vexra: v('e-vexra'+i), vexcu: v('e-vexcu'+i), vexig: v('e-vexig'+i), vextc: v('e-vextc'+i)
     });
   }
 
@@ -1066,9 +1091,9 @@ function buildRowsS(data){
       spf:v('e-spf'+i),vrt:v('e-vrt'+i),ams:v('e-ams'+i),elg:v('e-elg'+i),
       vit:v('e-vi'+i),tel:v('e-tel'+i),cal:v('e-cal'+i),
       pex1:v('e-px1'+i),pex2:v('e-px2'+i),pex3:v('e-px3'+i),
-      dm:v('e-dm'+i),dmc:'',hm:v('e-hm'+i),hmc:'',m:v('e-m'+i),
-      hsi:'',cp:v('e-cp'+i),cpc:'',vol:v('e-vol'+i),
-      crs:v('e-crs'+i),crsc:'',vexpr:'',vexra:'',vexcu:'',vexig:'',vextc:''
+      dm:v('e-dm'+i),dmc:v('e-dmc'+i),hm:v('e-hm'+i),hmc:v('e-hmc'+i),m:v('e-m'+i),
+      hsi:v('e-hsi'+i),cp:v('e-cp'+i),cpc:v('e-cpc'+i),vol:v('e-vol'+i),
+      crs:v('e-crs'+i),crsc:v('e-crsc'+i),vexpr:v('e-vexpr'+i),vexra:v('e-vexra'+i),vexcu:v('e-vexcu'+i),vexig:v('e-vexig'+i),vextc:v('e-vextc'+i)
     });
   }
   return rows;
