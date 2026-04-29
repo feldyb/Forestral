@@ -335,8 +335,10 @@
     <div class="card">
       <div class="card-title">Export toate fișele din listă</div>
       <p style="font-size:13px;color:#666;margin-bottom:12px;">Generează un singur OSxxxA.xls și OSxxxS.xls cu toate UA-urile din listă.</p>
-      <button class="btn btn-green" onclick="exportXLSLista()">📊 Generează OSxxxA + OSxxxS din listă</button>
-      <button class="btn btn-green" onclick="exportXLS()">📊 Generează XLS din fișa curentă</button>
+      <button class="btn btn-green" onclick="exportXLSLista('A')">📊 Generează OSxxxA din listă</button>
+      <button class="btn btn-green" onclick="exportXLSLista('S')">📊 Generează OSxxxS din listă</button>
+      <button class="btn btn-green" onclick="exportXLS('A')">📊 Generează OSxxxA (fișa curentă)</button>
+      <button class="btn btn-green" onclick="exportXLS('S')">📊 Generează OSxxxS (fișa curentă)</button>
     </div>
     <div class="card">
       <div class="card-title">Status</div>
@@ -887,7 +889,7 @@ function showToast(msg){
 }
 
 
-function exportXLS(){
+function exportXLS(tip){
   const d = collectData();
   const v = (k) => d[k] || '';
   const adm = v('adm') || '1';
@@ -978,9 +980,13 @@ function exportXLS(){
   XLSX.utils.book_append_sheet(wbS, wsS, 'Sheet1');
 
   // Download both
-  XLSX.writeFile(wbA, osCode + 'A.xls');
-  setTimeout(() => XLSX.writeFile(wbS, osCode + 'S.xls'), 500);
-  showToast('✓ Fișiere generate: ' + osCode + 'A.xls + ' + osCode + 'S.xls');
+  if(tip === 'A'){
+    XLSX.writeFile(wbA, osCode + 'A.xls');
+    showToast('✓ Generat ' + osCode + 'A.xls');
+  } else {
+    XLSX.writeFile(wbS, osCode + 'S.xls');
+    showToast('✓ Generat ' + osCode + 'S.xls');
+  }
 }
 
 // ===== LISTA FISE =====
@@ -1099,22 +1105,26 @@ function buildRowsS(data){
   return rows;
 }
 
-function exportXLSLista(){
+function exportXLSLista(tip){
   const lista = getLista();
   if(lista.length === 0){ showToast('Lista e goală! Adaugă fișe mai întâi.'); return; }
-  const allA = lista.map(f => buildRowA(f.data));
-  const allS = lista.flatMap(f => buildRowsS(f.data));
   const d0 = lista[0].data;
   const adm = d0.adm || '1';
   const up = d0.up || '1';
   const osCode = 'OS' + String(adm).padStart(2,'0') + String(up).padStart(2,'0');
-  const wbA = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wbA, XLSX.utils.json_to_sheet(allA), 'Sheet1');
-  const wbS = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wbS, XLSX.utils.json_to_sheet(allS.length ? allS : [{}]), 'Sheet1');
-  XLSX.writeFile(wbA, osCode + 'A.xls');
-  setTimeout(() => XLSX.writeFile(wbS, osCode + 'S.xls'), 500);
-  showToast('✓ Export ' + lista.length + ' fișe: ' + osCode + 'A.xls + ' + osCode + 'S.xls');
+  if(tip === 'A'){
+    const allA = lista.map(f => buildRowA(f.data));
+    const wbA = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wbA, XLSX.utils.json_to_sheet(allA), 'Sheet1');
+    XLSX.writeFile(wbA, osCode + 'A.xls');
+    showToast('✓ Generat ' + osCode + 'A.xls (' + lista.length + ' fișe)');
+  } else {
+    const allS = lista.flatMap(f => buildRowsS(f.data));
+    const wbS = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wbS, XLSX.utils.json_to_sheet(allS.length ? allS : [{}]), 'Sheet1');
+    XLSX.writeFile(wbS, osCode + 'S.xls');
+    showToast('✓ Generat ' + osCode + 'S.xls (' + allS.length + ' elemente)');
+  }
 }
 
 
