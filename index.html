@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#1b5e2e">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Forestral">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <title>Fișă Descriere Silvică</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;background:#f5f5f5;color:#333;}
+    .header{background:#1b5e2e;color:white;padding:14px 16px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,0.15);}
+    .hico{width:40px;height:40px;background:rgba(255,255,255,0.2);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+    .header h1{font-size:17px;font-weight:500;color:white;margin:0;}
+    .header p{font-size:12px;opacity:0.75;color:white;margin:0;}
+    .nav{display:flex;background:white;border-bottom:1px solid #e0e0e0;overflow-x:auto;position:sticky;top:60px;z-index:99;}
+    .nav::-webkit-scrollbar{height:3px;}
+    .nav::-webkit-scrollbar-thumb{background:#1b5e2e;border-radius:2px;}
+    .ntab{padding:12px 16px;font-size:13px;font-weight:500;color:#666;cursor:pointer;white-space:nowrap;border-bottom:3px solid transparent;flex-shrink:0;}
+    .ntab.on{color:#1b5e2e;border-bottom-color:#1b5e2e;}
+    .content{padding:14px;}
+    .section{display:none;}
+    .section.active{display:block;}
+    .card{background:white;border-radius:10px;border:1px solid #e8e8e8;padding:14px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,0.05);}
+    .card-title{font-size:12px;font-weight:600;color:#1b5e2e;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid #f0f0f0;}
+    .field{margin-bottom:10px;}
+    .field label,.lbl{display:block;font-size:11px;color:#666;margin-bottom:3px;font-weight:500;}
+    .r2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;}
+    .r3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;}
+    .r4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;}
+    input,select,textarea{width:100%;padding:10px;font-size:14px;border:1px solid #ddd;border-radius:6px;background:white;color:#333;font-family:inherit;}
+    input:focus,select:focus{outline:none;border-color:#1b5e2e;box-shadow:0 0 0 3px rgba(27,94,46,0.1);}
+    input.imported{background:#e8f5e9;border-color:#a5d6a7;}
+    textarea{resize:vertical;min-height:60px;}
+    .btn{padding:12px 16px;font-size:14px;font-weight:600;border:none;border-radius:8px;cursor:pointer;width:100%;margin-top:8px;}
+    .btn-green{background:#1b5e2e;color:white;}
+    .btn-outline{background:white;color:#1b5e2e;border:2px solid #1b5e2e;}
+    .btn-red{background:white;color:#c62828;border:2px solid #c62828;}
+    .btn-add{background:white;color:#1b5e2e;border:1px solid #1b5e2e;padding:8px 12px;font-size:13px;width:100%;border-radius:6px;cursor:pointer;margin-top:6px;}
+    .elmbox{background:#f9f9f9;border:1px solid #e0e0e0;border-radius:8px;padding:12px;margin-bottom:10px;}
+    .elmtitle{font-size:12px;font-weight:700;color:#1b5e2e;margin-bottom:10px;}
+    .grp{background:white;border:1px solid #eee;border-radius:6px;padding:10px;margin-bottom:7px;}
+    .grplbl{font-size:10px;font-weight:700;color:#999;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:7px;display:block;}
+    .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1b5e2e;color:white;padding:12px 24px;border-radius:20px;font-size:13px;opacity:0;pointer-events:none;transition:opacity 0.3s;z-index:9999;white-space:nowrap;}
+    .toast.show{opacity:1;}
+    /* Import panel */
+    .import-panel{background:#e8f5e9;border:2px dashed #66bb6a;border-radius:10px;padding:16px;margin-bottom:12px;text-align:center;}
+    .import-panel h3{color:#1b5e2e;font-size:14px;margin-bottom:8px;}
+    .import-panel p{font-size:12px;color:#555;margin-bottom:10px;line-height:1.5;}
+    .ua-search{display:flex;gap:8px;margin-bottom:8px;}
+    .ua-search input{flex:1;padding:10px;font-size:14px;border:1px solid #ddd;border-radius:6px;}
+    .ua-search button{padding:10px 16px;background:#1b5e2e;color:white;border:none;border-radius:6px;font-size:14px;cursor:pointer;white-space:nowrap;}
+    .ua-list{max-height:200px;overflow-y:auto;border:1px solid #ddd;border-radius:6px;background:white;}
+    .ua-item{padding:10px 14px;cursor:pointer;font-size:13px;border-bottom:1px solid #f5f5f5;}
+    .ua-item:hover{background:#e8f5e9;}
+    .ua-item span{color:#1b5e2e;font-weight:600;}
+    .badge{display:inline-block;background:#1b5e2e;color:white;font-size:10px;padding:2px 7px;border-radius:10px;margin-left:6px;}
+    .file-drop{border:2px dashed #66bb6a;border-radius:8px;padding:20px;text-align:center;cursor:pointer;background:#f9f9f9;margin-bottom:10px;}
+    .file-drop:hover{background:#e8f5e9;}
+    .file-drop p{font-size:13px;color:#555;}
+    .file-drop .icon{font-size:28px;margin-bottom:6px;}
+    /* SPLASH SCREEN */
+    #splash{position:fixed;inset:0;background:#1b5e2e;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:99999;transition:opacity 0.6s ease;}
+    #splash.hide{opacity:0;pointer-events:none;}
+    #splash img{width:220px;height:220px;object-fit:contain;border-radius:20px;animation:splashIn 0.6s ease;}
+    #splash .spl-title{color:white;font-size:22px;font-weight:700;margin-top:20px;letter-spacing:1px;}
+    #splash .spl-sub{color:rgba(255,255,255,0.7);font-size:13px;margin-top:6px;}
+    @keyframes splashIn{from{transform:scale(0.7);opacity:0;}to{transform:scale(1);opacity:1;}}
+  </style>
+</head>
+<body>
+
+<!-- SPLASH SCREEN -->
+<div id="splash">
+  <img src="icon-512.png" alt="Forestral">
+  <div class="spl-title">FORESTRAL</div>
+  <div class="spl-sub">Fișă Descriere Silvică</div>
+</div>
+
+<div class="header">
+  <div class="hico">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+      <path d="M17 8C8 10 5.9 16.17 3.82 22"/><path d="M9.5 9.5c1-2.5 3.5-5 6.5-5.5"/><path d="M12 13c0 5-4 7-4 7"/>
+    </svg>
+  </div>
+  <div><h1>Fișă Descriere Silvică</h1><p id="db-status">Nicio bază de date încărcată</p></div>
+</div>
+
+<div class="nav">
+  <div class="ntab on" onclick="goTab(0)">Import DB</div>
+  <div class="ntab" onclick="goTab(1)">Identificare</div>
+  <div class="ntab" onclick="goTab(2)">Relief & Sol</div>
+  <div class="ntab" onclick="goTab(3)">Arboret</div>
+  <div class="ntab" onclick="goTab(4)">Semințiș</div>
+  <div class="ntab" onclick="goTab(5)">Elemente</div>
+  <div class="ntab" onclick="goTab(6)">Export</div>
+</div>
+
+<div class="content">
+
+  <!-- TAB 0: IMPORT -->
+  <div class="section active" id="s0">
+    <div class="import-panel">
+      <h3>📂 Import din AS2007</h3>
+      <p>Încarcă fișierele XLS exportate din AS2007 pentru a completa automat fișele.</p>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Pas 1 — Încarcă OSxxxxA.XLS (date generale)</div>
+      <div class="file-drop" onclick="document.getElementById('fileA').click()">
+        <div class="icon">📊</div>
+        <p id="lblA">Apasă pentru a selecta OSxxxxA.XLS</p>
+      </div>
+      <input type="file" id="fileA" accept=".xls,.xlsx" style="display:none" onchange="loadFileA(event)">
+    </div>
+
+    <div class="card">
+      <div class="card-title">Pas 2 — Încarcă OSxxxxS.XLS (elemente arboret)</div>
+      <div class="file-drop" onclick="document.getElementById('fileS').click()">
+        <div class="icon">🌳</div>
+        <p id="lblS">Apasă pentru a selecta OSxxxxS.XLS</p>
+      </div>
+      <input type="file" id="fileS" accept=".xls,.xlsx" style="display:none" onchange="loadFileS(event)">
+    </div>
+
+    <div class="card" id="search-card" style="display:none">
+      <div class="card-title">Pas 3 — Selectează UA</div>
+      <div class="ua-search">
+        <input type="text" id="ua-search-input" placeholder="Caută UP/UA (ex: 1 10B)" oninput="filterUA()">
+        <button onclick="filterUA()">Caută</button>
+      </div>
+      <div class="ua-list" id="ua-list"></div>
+    </div>
+  </div>
+
+  <!-- TAB 1: IDENTIFICARE -->
+  <div class="section" id="s1">
+    <div class="card">
+      <div class="card-title">Identificare UP / UA</div>
+      <div class="r3">
+        <div class="field"><label>ISJ</label><input type="text" id="isj"></div>
+        <div class="field"><label>O.S. (ADM)</label><input type="text" id="adm"></div>
+        <div class="field"><label>U.P.</label><input type="text" id="up"></div>
+      </div>
+      <div class="r2">
+        <div class="field"><label>U.A. nr.</label><input type="text" id="ua1"></div>
+        <div class="field"><label>U.A. lit.</label><input type="text" id="ua2"></div>
+      </div>
+      <div class="r3">
+        <div class="field"><label>DEC 1</label><input type="text" id="dec1"></div>
+        <div class="field"><label>DEC 2</label><input type="text" id="dec2"></div>
+        <div class="field"><label>DEC 3</label><input type="text" id="dec3"></div>
+      </div>
+      <div class="r2">
+        <div class="field"><label>SUP</label><input type="text" id="sup"></div>
+        <div class="field"><label>Fond Funciar (FF)</label><input type="text" id="ff"></div>
+      </div>
+      <div class="r2">
+        <div class="field"><label>Suprafață (SPR) ha</label><input type="number" id="spr" step="0.01"></div>
+        <div class="field"><label>FLS</label><input type="text" id="fls"></div>
+      </div>
+      <div class="r3">
+        <div class="field"><label>GF</label><input type="text" id="gf"></div>
+        <div class="field"><label>Cat. Fct. 1</label><input type="text" id="fct1"></div>
+        <div class="field"><label>Cat. Fct. 2</label><input type="text" id="fct2"></div>
+      </div>
+      <div class="field"><label>Cat. Fct. 3</label><input type="text" id="fct3"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Altitudine</div>
+      <div class="r2">
+        <div class="field"><label>ALT min/medie</label><input type="number" id="alt1"></div>
+        <div class="field"><label>ALT max</label><input type="number" id="alt2"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 2: RELIEF & SOL -->
+  <div class="section" id="s2">
+    <div class="card">
+      <div class="card-title">Relief & Expunere</div>
+      <div class="r2">
+        <div class="field"><label>Relief (RLF)</label><input type="text" id="rlf"></div>
+        <div class="field"><label>CNF</label><input type="text" id="cnf"></div>
+      </div>
+      <div class="r2">
+        <div class="field"><label>Expoziție (EXP)</label><input type="text" id="exp"></div>
+        <div class="field"><label>Înclinare (INC) °</label><input type="number" id="inc"></div>
+      </div>
+      <div class="r3">
+        <div class="field"><label>SOL</label><input type="text" id="sol"></div>
+        <div class="field"><label>ERZ</label><input type="text" id="erz"></div>
+        <div class="field"><label>FLR</label><input type="text" id="flr"></div>
+      </div>
+      <div class="r2">
+        <div class="field"><label>Tip Stațiune (TS)</label><input type="text" id="ts"></div>
+        <div class="field"><label>INV</label><input type="text" id="inv"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Tip Pădure & Drum</div>
+      <div class="r2">
+        <div class="field"><label>Tip Pădure (TP)</label><input type="text" id="tp"></div>
+        <div class="field"><label>CRT</label><input type="text" id="crti"></div>
+      </div>
+      <div class="r3">
+        <div class="field"><label>POL 1</label><input type="text" id="pol1"></div>
+        <div class="field"><label>POL 2</label><input type="text" id="pol2"></div>
+        <div class="field"><label>POL 3</label><input type="text" id="pol3"></div>
+      </div>
+      <div class="r2">
+        <div class="field"><label>LIT</label><input type="text" id="lit"></div>
+        <div class="field"><label>Drum (DRM)</label><input type="text" id="drm"></div>
+      </div>
+      <div class="r3">
+        <div class="field"><label>Distanță (DST)</label><input type="number" id="dst"></div>
+        <div class="field"><label>STR</label><input type="text" id="str"></div>
+        <div class="field"><label>CNS</label><input type="text" id="cns"></div>
+      </div>
+      <div class="r2">
+        <div class="field"><label>CLP</label><input type="text" id="clp"></div>
+        <div class="field"><label>Vârsta ACT (TA)</label><input type="number" id="ta"></div>
+      </div>
+      <div class="field"><label>REG</label><input type="text" id="reg"></div>
+    </div>
+  </div>
+
+  <!-- TAB 3: ARBORET -->
+  <div class="section" id="s3">
+    <div class="card">
+      <div class="card-title">Date Arboret</div>
+      <div class="r2">
+        <div class="field"><label>Vârsta Exp. (TE)</label><input type="number" id="te"></div>
+        <div class="field"><label>EX</label><input type="text" id="ex"></div>
+      </div>
+      <div class="r2">
+        <div class="field"><label>Urgență (URG)</label><input type="text" id="urg"></div>
+        <div class="field"><label>PRM</label><input type="text" id="prm"></div>
+      </div>
+      <div class="r2">
+        <div class="field"><label>NIN</label><input type="text" id="nin"></div>
+        <div class="field"><label>NID</label><input type="text" id="nid"></div>
+      </div>
+      <div class="r2">
+        <div class="field"><label>LX 1</label><input type="text" id="lx1"></div>
+        <div class="field"><label>LX 2</label><input type="text" id="lx2"></div>
+      </div>
+      <div class="r3">
+        <div class="field"><label>LP 1</label><input type="text" id="lp1"></div>
+        <div class="field"><label>LP 2</label><input type="text" id="lp2"></div>
+        <div class="field"><label>LP 3</label><input type="text" id="lp3"></div>
+      </div>
+      <div class="r4">
+        <div class="field"><label>DC 1</label><input type="text" id="dc1"></div>
+        <div class="field"><label>DC 2</label><input type="text" id="dc2"></div>
+        <div class="field"><label>DC 3</label><input type="text" id="dc3"></div>
+        <div class="field"><label>DC 4</label><input type="text" id="dc4"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Compoziția Tel — SP 1…SP 6</div>
+      <div id="comp-cont"></div>
+      <button class="btn-add" onclick="addComp()">+ Adaugă specie Tel</button>
+      <div style="margin-top:12px;" class="r3">
+        <div class="field"><label>Subarboret (SBA)</label><input type="text" id="sba"></div>
+        <div class="field"><label>SO</label><input type="text" id="so"></div>
+        <div class="field"><label>MR</label><input type="text" id="mr"></div>
+      </div>
+      <div class="field"><label>DS</label><input type="text" id="ds"></div>
+    </div>
+  </div>
+
+  <!-- TAB 4: SEMINTIS -->
+  <div class="section" id="s4">
+    <div class="card">
+      <div class="card-title">Semințiș Utilizabil</div>
+      <div class="field"><label>VS</label><input type="text" id="vs"></div>
+      <div id="sem-cont" style="margin-top:10px;"></div>
+      <button class="btn-add" onclick="addSem()">+ Adaugă specie</button>
+      <div style="margin-top:12px;" class="r3">
+        <div class="field"><label>SOC</label><input type="text" id="soc"></div>
+        <div class="field"><label>RS</label><input type="text" id="rs"></div>
+        <div class="field"><label>NRS</label><input type="text" id="nrs"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 5: ELEMENTE -->
+  <div class="section" id="s5">
+    <div class="card">
+      <div class="card-title">Elemente (ELM)</div>
+      <div id="elm-cont"></div>
+      <button class="btn-add" onclick="addElm()">+ Adaugă element</button>
+    </div>
+  </div>
+
+  <!-- TAB 6: EXPORT -->
+  <div class="section" id="s6">
+    <div class="card">
+      <div class="card-title">Export & Salvare</div>
+      <p style="font-size:13px;color:#666;line-height:1.7;margin-bottom:14px;">
+        Exportul generează formularul vizual identic cu originalul — rânduri și coloane cu borduri verzi, texte centrate.
+      </p>
+      <button class="btn btn-green" onclick="exportFormular()">📋 Exportă Formular (vizual)</button>
+      <button class="btn btn-outline" onclick="manualSave()">💾 Salvează date (JSON)</button>
+      <button class="btn btn-outline" onclick="document.getElementById('file-load').click()">📂 Încarcă date salvate</button>
+      <button class="btn btn-red" onclick="clearAll()">🗑️ Șterge tot</button>
+    </div>
+    <div class="card">
+      <div class="card-title">Status</div>
+      <p id="status" style="font-size:13px;color:#666;">Salvare automată în browser: activă.</p>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+<input type="file" id="file-load" accept=".json" style="display:none" onchange="handleLoad(event)">
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+const SKEY = 'fisa_silvica_v3';
+let cc=0, sc=0, ec=0;
+let dbA = {}, dbS = {}; // baze de date încărcate
+let allUA = []; // lista tuturor UA
+
+function goTab(i){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.ntab').forEach(t=>t.classList.remove('on'));
+  document.getElementById('s'+i).classList.add('active');
+  document.querySelectorAll('.ntab')[i].classList.add('on');
+  saveAuto();
+}
+
+/* ========== IMPORT XLS ========== */
+function loadFileA(event){
+  const file = event.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e){
+    const wb = XLSX.read(e.target.result, {type:'binary'});
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    const data = XLSX.utils.sheet_to_json(ws, {defval:''});
+    dbA = {};
+    data.forEach(row => {
+      const key = makeKey(row.adm, row.up, row.ua1, row.ua2);
+      dbA[key] = row;
+    });
+    allUA = Object.keys(dbA).map(k => {
+      const r = dbA[k];
+      return {key:k, adm:r.adm, up:r.up, ua1:r.ua1, ua2:r.ua2};
+    });
+    document.getElementById('lblA').textContent = `✓ ${file.name} — ${data.length} UA încărcate`;
+    document.getElementById('lblA').style.color = '#1b5e2e';
+    checkShowSearch();
+    showToast(`✓ ${data.length} UA încărcate din ${file.name}`);
+    document.getElementById('db-status').textContent = `DB: ${data.length} UA`;
+  };
+  reader.readAsBinaryString(file);
+}
+
+function loadFileS(event){
+  const file = event.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e){
+    const wb = XLSX.read(e.target.result, {type:'binary'});
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    const data = XLSX.utils.sheet_to_json(ws, {defval:''});
+    dbS = {};
+    data.forEach(row => {
+      const key = makeKey(row.adm, row.up, row.ua1, row.ua2);
+      if(!dbS[key]) dbS[key] = [];
+      dbS[key].push(row);
+    });
+    document.getElementById('lblS').textContent = `✓ ${file.name} — ${data.length} elemente încărcate`;
+    document.getElementById('lblS').style.color = '#1b5e2e';
+    showToast(`✓ ${data.length} elemente încărcate din ${file.name}`);
+  };
+  reader.readAsBinaryString(file);
+}
+
+function makeKey(adm, up, ua1, ua2){
+  return `${adm}_${up}_${String(ua1).trim()}_${String(ua2).trim()}`;
+}
+
+function checkShowSearch(){
+  if(Object.keys(dbA).length > 0){
+    document.getElementById('search-card').style.display = 'block';
+    renderUAList(allUA);
+  }
+}
+
+function filterUA(){
+  const q = document.getElementById('ua-search-input').value.toLowerCase().trim();
+  if(!q){ renderUAList(allUA); return; }
+  const filtered = allUA.filter(ua =>
+    String(ua.up).includes(q) ||
+    String(ua.ua1).includes(q) ||
+    String(ua.ua2).toLowerCase().includes(q) ||
+    `up${ua.up} ua${ua.ua1}${ua.ua2}`.toLowerCase().includes(q) ||
+    `${ua.up} ${ua.ua1}${ua.ua2}`.toLowerCase().includes(q)
+  );
+  renderUAList(filtered);
+}
+
+function renderUAList(list){
+  const el = document.getElementById('ua-list');
+  if(list.length === 0){
+    el.innerHTML = '<div class="ua-item" style="color:#999;">Niciun rezultat</div>';
+    return;
+  }
+  el.innerHTML = list.slice(0,100).map(ua =>
+    `<div class="ua-item" onclick="selectUA('${ua.key}')">
+      <span>UP ${ua.up} UA ${ua.ua1}${ua.ua2}</span>
+      <small style="color:#888;margin-left:8px;">ADM ${ua.adm}</small>
+    </div>`
+  ).join('');
+  if(list.length > 100){
+    el.innerHTML += `<div class="ua-item" style="color:#999;font-style:italic;">... și încă ${list.length-100} rezultate. Refinează căutarea.</div>`;
+  }
+}
+
+function selectUA(key){
+  const rowA = dbA[key];
+  const rowsS = dbS[key] || [];
+
+  if(!rowA){ showToast('UA negăsit!'); return; }
+
+  // Șterge câmpuri vechi
+  clearFields();
+
+  // Mapare câmpuri A → formularul HTML
+  const mapA = {
+    adm:'adm', up:'up', ua1:'ua1', ua2:'ua2',
+    dec1:'dec1', dec2:'dec2', dec3:'dec3',
+    sup:'sup', ff:'ff', spr:'spr', fls:'fls', gf:'gf',
+    fct1:'fct1', fct2:'fct2', fct3:'fct3',
+    rlf:'rlf', cnf:'cnf', exp:'exp', inc:'inc',
+    alt1:'alt1', alt2:'alt2',
+    sol:'sol', erz:'erz', flr:'flr', ts:'ts', inv:'inv',
+    tp:'tp', crti:'crti',
+    pol1:'pol1', pol2:'pol2', pol3:'pol3',
+    lit:'lit', drm:'drm', dst:'dst',
+    str:'str', cns:'cns', clp:'clp', ta:'ta', reg:'reg',
+    te:'te', ex:'ex', urg:'urg', prm:'prm',
+    nin:'nin', nid:'nid',
+    lx1:'lx1', lx2:'lx2',
+    lp1:'lp1', lp2:'lp2', lp3:'lp3',
+    dc1:'dc1', dc2:'dc2', dc3:'dc3', dc4:'dc4',
+    sba:'sba', so:'so', mr:'mr', ds:'ds',
+    vs:'vs', soc:'soc', rs:'rs'
+  };
+
+  Object.keys(mapA).forEach(xls => {
+    const el = document.getElementById(mapA[xls]);
+    if(el && rowA[xls] !== undefined && rowA[xls] !== ''){
+      el.value = rowA[xls];
+      el.classList.add('imported');
+    }
+  });
+
+  // Compoziția Tel din cel/cpr
+  document.getElementById('comp-cont').innerHTML = '';
+  cc = 0;
+  // cel1/cpr1 = SP1, și cel = text pentru restul
+  if(rowA.cel1 && rowA.cel1 !== ''){
+    addComp();
+    setVal('csp1', rowA.cel1);
+    setVal('cpr1', rowA.cpr1);
+  }
+  // cel = restul speciilor concatenate ca text (ex: "CA 2DT 2")
+  if(rowA.cel && rowA.cel !== ''){
+    // Parsează "SP PROP SP PROP ..."
+    const parts = String(rowA.cel).trim().split(/\s+/);
+    for(let i=0; i<parts.length; i+=2){
+      if(parts[i] && parts[i+1] !== undefined){
+        addComp();
+        setVal('csp'+cc, parts[i]);
+        setVal('cpr'+cc, parts[i+1]);
+      }
+    }
+  }
+
+  // Semințiș din mel1/mpr1 și mel
+  document.getElementById('sem-cont').innerHTML = '';
+  sc = 0;
+  if(rowA.mel1 && rowA.mel1 !== ''){
+    addSem();
+    setVal('ssp1', rowA.mel1);
+    setVal('spr1', rowA.mpr1);
+  }
+  if(rowA.mel && rowA.mel !== ''){
+    const parts = String(rowA.mel).trim().split(/\s+/);
+    for(let i=0; i<parts.length; i+=2){
+      if(parts[i] && parts[i+1] !== undefined){
+        addSem();
+        setVal('ssp'+sc, parts[i]);
+        setVal('spr'+sc, parts[i+1]);
+      }
+    }
+  }
+
+  // Elemente din S
+  document.getElementById('elm-cont').innerHTML = '';
+  ec = 0;
+  rowsS.forEach(row => {
+    addElm();
+    const n = ec;
+    setVal('e-elm'+n, row.elm);
+    setVal('e-mrg'+n, row.mrg);
+    setVal('e-vrt'+n, row.vrt);
+    setVal('e-prp'+n, row.prp);
+    setVal('e-dm'+n, row.dm);
+    setVal('e-hm'+n, row.hm);
+    setVal('e-m'+n, row.m);
+    setVal('e-cp'+n, row.cp);
+    setVal('e-ams'+n, row.ams);
+    setVal('e-elg'+n, row.elg);
+    setVal('e-vi'+n, row.vit);
+    setVal('e-tel'+n, row.tel);
+    setVal('e-cal'+n, row.cal);
+    setVal('e-vol'+n, row.vol);
+    setVal('e-crs'+n, row.crs);
+    setVal('e-px1'+n, row.pex1);
+    setVal('e-px2'+n, row.pex2);
+    setVal('e-px3'+n, row.pex3);
+    setVal('e-prov'+n, row.prov);
+    // Marchează ca importat
+    document.querySelectorAll(`#elm${n} input`).forEach(i=>i.classList.add('imported'));
+  });
+
+  saveAuto();
+  showToast(`✓ UA ${rowA.up}/${rowA.ua1}${rowA.ua2} încărcată — ${rowsS.length} elemente`);
+  goTab(1); // trece la tab Identificare
+}
+
+function setVal(id, val){
+  const el = document.getElementById(id);
+  if(el && val !== undefined && val !== '') {
+    el.value = val;
+    el.classList.add('imported');
+  }
+}
+
+function clearFields(){
+  document.querySelectorAll('input,select,textarea').forEach(f=>{
+    if(f.id && f.id !== 'ua-search-input') { f.value=''; f.classList.remove('imported'); }
+  });
+}
+
+/* ========== ADĂUGARE RÂNDURI DINAMICE ========== */
+function addComp(){
+  cc++;
+  document.getElementById('comp-cont').insertAdjacentHTML('beforeend',
+    `<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin-bottom:6px;">
+      <div class="field"><span class="lbl">SP ${cc}</span><input type="text" id="csp${cc}" placeholder="specie"></div>
+      <div class="field"><span class="lbl">PROP</span><input type="number" id="cpr${cc}" placeholder="%"></div>
+    </div>`);
+}
+
+function addSem(){
+  sc++;
+  document.getElementById('sem-cont').insertAdjacentHTML('beforeend',
+    `<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin-bottom:6px;">
+      <div class="field"><span class="lbl">SP ${sc}</span><input type="text" id="ssp${sc}" placeholder="specie"></div>
+      <div class="field"><span class="lbl">PROP</span><input type="number" id="spr${sc}" placeholder="%"></div>
+    </div>`);
+}
+
+function addElm(){
+  ec++;
+  const n=ec;
+  document.getElementById('elm-cont').insertAdjacentHTML('beforeend',
+    `<div class="elmbox" id="elm${n}">
+      <div class="elmtitle">Element ${n}</div>
+      <div class="grp">
+        <span class="grplbl">Identificare</span>
+        <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;">
+          <div class="field"><span class="lbl">ELEMENT (ELM)</span><input type="text" id="e-elm${n}"></div>
+          <div class="field"><span class="lbl">M R G</span><input type="text" id="e-mrg${n}"></div>
+        </div>
+      </div>
+      <div class="grp">
+        <span class="grplbl">Date dendometrice</span>
+        <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin-bottom:6px;">
+          <div class="field"><span class="lbl">VÂRSTA (VRT)</span><input type="number" id="e-vrt${n}"></div>
+          <div class="field"><span class="lbl">PROP (PRP) %</span><input type="number" id="e-prp${n}"></div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;">
+          <div class="field"><span class="lbl">DIAM. (DM) cm</span><input type="number" id="e-dm${n}"></div>
+          <div class="field"><span class="lbl">INAL. (HM) m</span><input type="number" id="e-hm${n}"></div>
+          <div class="field"><span class="lbl">M</span><input type="text" id="e-m${n}"></div>
+        </div>
+      </div>
+      <div class="grp">
+        <span class="grplbl">Coloane specifice</span>
+        <div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;">
+          <div class="field"><span class="lbl">C P</span><input type="text" id="e-cp${n}"></div>
+          <div class="field"><span class="lbl">A M S</span><input type="text" id="e-ams${n}"></div>
+          <div class="field"><span class="lbl">E L G</span><input type="text" id="e-elg${n}"></div>
+          <div class="field"><span class="lbl">V I</span><input type="text" id="e-vi${n}"></div>
+          <div class="field"><span class="lbl">T E L</span><input type="text" id="e-tel${n}"></div>
+        </div>
+      </div>
+      <div class="grp">
+        <span class="grplbl">Volum & Creștere</span>
+        <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;">
+          <div class="field"><span class="lbl">CALIT. (CAL)</span><input type="text" id="e-cal${n}"></div>
+          <div class="field"><span class="lbl">VOLUM/HA</span><input type="number" id="e-vol${n}"></div>
+          <div class="field"><span class="lbl">CREȘTERE (CRS)</span><input type="number" id="e-crs${n}"></div>
+        </div>
+      </div>
+      <div class="grp">
+        <span class="grplbl">% Extras (PEX)</span>
+        <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;">
+          <div class="field"><span class="lbl">PEX 1</span><input type="number" id="e-px1${n}"></div>
+          <div class="field"><span class="lbl">PEX 2</span><input type="number" id="e-px2${n}"></div>
+          <div class="field"><span class="lbl">PEX 3</span><input type="number" id="e-px3${n}"></div>
+        </div>
+      </div>
+      <div class="grp">
+        <span class="grplbl">Proveniență</span>
+        <div class="field"><input type="text" id="e-prov${n}" placeholder="PROVENIENȚA (PROV)"></div>
+      </div>
+    </div>`);
+}
+
+/* ========== EXPORT FORMULAR VIZUAL ========== */
+function v(id){ const el=document.getElementById(id); return el?(el.value||''):''; }
+
+function td(label, value){
+  return `<td style="text-align:center;vertical-align:middle;padding:3px 2px;">
+    <span style="font-size:6px;font-weight:bold;color:#444;display:block;text-align:center;">${label}</span>
+    <span style="font-size:9px;font-weight:700;display:block;text-align:center;min-height:12px;border-bottom:0.5px solid #ccc;">${value||''}</span>
+  </td>`;
+}
+function tdw(label, value, span){
+  return `<td colspan="${span||1}" style="text-align:center;vertical-align:middle;padding:3px 2px;">
+    <span style="font-size:6px;font-weight:bold;color:#444;display:block;text-align:center;">${label}</span>
+    <span style="font-size:9px;font-weight:700;display:block;text-align:center;min-height:12px;border-bottom:0.5px solid #ccc;">${value||''}</span>
+  </td>`;
+}
+
+function exportFormular(){
+  saveAuto();
+  let elmRows='';
+  for(let n=1;n<=ec;n++){
+    elmRows+=`<tr>
+      ${td('ELM',v('e-elm'+n))}${td('MRG',v('e-mrg'+n))}
+      ${td('VRT',v('e-vrt'+n))}${td('PRP',v('e-prp'+n))}
+      ${td('DM',v('e-dm'+n))}${td('HM',v('e-hm'+n))}${td('M',v('e-m'+n))}
+      ${td('CP',v('e-cp'+n))}${td('AMS',v('e-ams'+n))}${td('ELG',v('e-elg'+n))}
+      ${td('VI',v('e-vi'+n))}${td('TEL',v('e-tel'+n))}
+      ${td('CAL',v('e-cal'+n))}${td('VOL/ha',v('e-vol'+n))}${td('CRS',v('e-crs'+n))}
+      ${td('PEX1',v('e-px1'+n))}${td('PEX2',v('e-px2'+n))}${td('PEX3',v('e-px3'+n))}
+      ${td('PROV',v('e-prov'+n))}
+    </tr>`;
+  }
+  for(let i=0;i<5;i++) elmRows+=`<tr>${Array(19).fill('<td style="height:18px;"></td>').join('')}</tr>`;
+
+  let compCells='';
+  for(let i=1;i<=cc;i++) compCells+=td('SP '+i,v('csp'+i))+td('PROP',v('cpr'+i));
+  for(let i=cc+1;i<=6;i++) compCells+=td('SP '+i,'')+td('PROP','');
+
+  let semCells='';
+  for(let i=1;i<=sc;i++) semCells+=td('SP '+i,v('ssp'+i))+td('PROP',v('spr'+i));
+  for(let i=sc+1;i<=6;i++) semCells+=td('SP '+i,'')+td('PROP','');
+
+  const html=`<!DOCTYPE html><html lang="ro"><head><meta charset="UTF-8">
+<title>Fișă Silvică UP${v('up')} UA${v('ua1')}${v('ua2')}</title>
+<style>
+  body{font-family:Arial,sans-serif;font-size:8px;margin:10px;background:white;}
+  h2{text-align:center;font-size:13px;margin-bottom:4px;letter-spacing:1px;}
+  .sub{text-align:center;font-size:9px;color:#555;margin-bottom:10px;}
+  table{border-collapse:collapse;width:100%;margin-bottom:4px;}
+  td,th{border:1.5px solid #1b5e2e;padding:2px;font-size:7px;text-align:center;vertical-align:middle;}
+  th{background:#e8f5e9;font-weight:bold;padding:4px 2px;}
+  .rtitle{background:#e8f5e9;font-weight:bold;font-size:9px;text-align:center;letter-spacing:2px;padding:5px;}
+</style></head><body>
+<h2>FIȘĂ DE DESCRIERE SILVICĂ</h2>
+<div class="sub">ADM: ${v('adm')} &nbsp;|&nbsp; UP: ${v('up')} &nbsp;|&nbsp; UA: ${v('ua1')}${v('ua2')} &nbsp;|&nbsp; Data: ${new Date().toLocaleDateString('ro-RO')}</div>
+
+<table><tr>
+  ${td('ISJ',v('isj'))}${td('O.S.',v('adm'))}${td('U.P.',v('up'))}
+  ${tdw('U.A.',v('ua1')+v('ua2'),2)}
+  ${td('DEC1',v('dec1'))}${td('DEC2',v('dec2'))}${td('DEC3',v('dec3'))}
+  ${td('SUP',v('sup'))}${td('FF',v('ff'))}${td('SPR',v('spr'))}
+  ${td('FLS',v('fls'))}${td('GF',v('gf'))}
+  ${td('FCT1',v('fct1'))}${td('FCT2',v('fct2'))}${td('FCT3',v('fct3'))}
+</tr></table>
+
+<table><tr>
+  ${td('RLF',v('rlf'))}${td('CNF',v('cnf'))}${td('EXP',v('exp'))}${td('INC',v('inc'))}
+  ${td('ALT min',v('alt1'))}${td('ALT max',v('alt2'))}
+  ${td('SOL',v('sol'))}${td('ERZ',v('erz'))}${td('FLR',v('flr'))}
+  ${tdw('TIP STAȚIUNE (TS)',v('ts'),2)}${td('INV',v('inv'))}
+</tr></table>
+
+<table><tr>
+  ${tdw('TIP PĂDURE (TP)',v('tp'),2)}${td('CRT',v('crti'))}
+  ${td('POL1',v('pol1'))}${td('POL2',v('pol2'))}${td('POL3',v('pol3'))}
+  ${td('LIT',v('lit'))}${tdw('DRM',v('drm'),2)}${tdw('DST',v('dst'),2)}
+  ${td('STR',v('str'))}${td('CNS',v('cns'))}${td('CLP',v('clp'))}
+  ${tdw('TA',v('ta'),2)}${td('REG',v('reg'))}
+</tr></table>
+
+<table><tr>
+  ${tdw('TE',v('te'),2)}${td('EX',v('ex'))}
+  ${tdw('URG',v('urg'),2)}${td('PRM',v('prm'))}
+  ${td('NIN',v('nin'))}${td('NID',v('nid'))}
+  ${td('LX1',v('lx1'))}${td('LX2',v('lx2'))}
+  ${td('LP1',v('lp1'))}${td('LP2',v('lp2'))}${td('LP3',v('lp3'))}
+  ${td('DC1',v('dc1'))}${td('DC2',v('dc2'))}${td('DC3',v('dc3'))}${td('DC4',v('dc4'))}
+</tr></table>
+
+<table>
+  <tr><td colspan="100%" class="rtitle">C O M P O Z I Ț I A &nbsp; T E L</td></tr>
+  <tr>${compCells}${td('SBA',v('sba'))}${td('SO',v('so'))}${td('MR',v('mr'))}${td('DS',v('ds'))}</tr>
+</table>
+
+<table>
+  <tr><td colspan="100%" class="rtitle">S E M I N Ț I Ș &nbsp; U T I L I Z A B I L</td></tr>
+  <tr>${td('VS',v('vs'))}${semCells}${td('SOC',v('soc'))}${td('RS',v('rs'))}</tr>
+</table>
+
+<table>
+  <tr>
+    <th>ELM</th><th>MRG</th><th>VRT</th><th>PRP</th>
+    <th>DM</th><th>HM</th><th>M</th>
+    <th>CP</th><th>AMS</th><th>ELG</th><th>VI</th><th>TEL</th>
+    <th>CAL</th><th>VOL/ha</th><th>CRS</th>
+    <th>PEX1</th><th>PEX2</th><th>PEX3</th><th>PROV</th>
+  </tr>
+  ${elmRows}
+</table>
+</body></html>`;
+
+  saveFileWithPicker(html, `fisa_silvica_UP${v('up')}_UA${v('ua1')}${v('ua2')}.html`, 'text/html');
+}
+
+/* ========== SALVARE / ÎNCĂRCARE ========== */
+async function manualSave(){
+  const data = collectData();
+  const json = JSON.stringify(data, null, 2);
+  const fname = `fisa_UP${data['up']||'?'}_UA${data['ua1']||''}${data['ua2']||''}_${datestamp()}.json`;
+  await saveFileWithPicker(json, fname, 'application/json');
+}
+
+async function saveFileWithPicker(content, filename, mime){
+  if(window.showSaveFilePicker){
+    try{
+      const ext = filename.split('.').pop();
+      const handle = await window.showSaveFilePicker({
+        suggestedName: filename,
+        types:[{description: ext.toUpperCase()+' File', accept:{[mime]:['.'+ext]}}]
+      });
+      const w = await handle.createWritable();
+      await w.write(content); await w.close();
+      showToast('✓ Fișier salvat!'); return;
+    }catch(e){ if(e.name==='AbortError') return; }
+  }
+  const blob = new Blob([content],{type:mime});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href=url; a.download=filename;
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a); URL.revokeObjectURL(url);
+  showToast('✓ Descărcat!');
+}
+
+function handleLoad(e){
+  const file = e.target.files[0]; if(!file) return;
+  const r = new FileReader();
+  r.onload = function(ev){
+    try{
+      const data = JSON.parse(ev.target.result);
+      restoreData(data);
+      showToast('✓ Date încărcate!');
+    }catch{ showToast('❌ Fișier invalid!'); }
+  };
+  r.readAsText(file);
+  e.target.value='';
+}
+
+function collectData(){
+  const data={};
+  document.querySelectorAll('input,select,textarea').forEach(f=>{
+    if(f.id && f.id!=='ua-search-input') data[f.id]=f.value;
+  });
+  return data;
+}
+
+function saveAuto(){
+  localStorage.setItem(SKEY, JSON.stringify(collectData()));
+  const s=document.getElementById('status');
+  if(s) s.textContent='✓ Salvat automat la '+new Date().toLocaleTimeString('ro-RO');
+}
+
+function restoreData(data){
+  let maxC=0,maxS=0,maxE=0;
+  Object.keys(data).forEach(k=>{
+    if(/^csp(\d+)$/.test(k)) maxC=Math.max(maxC,parseInt(k.replace('csp',''))||0);
+    if(/^ssp(\d+)$/.test(k)) maxS=Math.max(maxS,parseInt(k.replace('ssp',''))||0);
+    if(/^e-elm(\d+)$/.test(k)) maxE=Math.max(maxE,parseInt(k.replace('e-elm',''))||0);
+  });
+  document.getElementById('comp-cont').innerHTML=''; cc=0;
+  document.getElementById('sem-cont').innerHTML=''; sc=0;
+  document.getElementById('elm-cont').innerHTML=''; ec=0;
+  for(let i=0;i<Math.max(maxC,2);i++) addComp();
+  for(let i=0;i<Math.max(maxS,1);i++) addSem();
+  for(let i=0;i<Math.max(maxE,1);i++) addElm();
+  Object.keys(data).forEach(k=>{const el=document.getElementById(k);if(el) el.value=data[k];});
+}
+
+function clearAll(){
+  if(confirm('Ștergi toate datele completate?')){localStorage.removeItem(SKEY);location.reload();}
+}
+
+function datestamp(){
+  const d=new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2500);
+}
+
+document.addEventListener('input', saveAuto);
+document.addEventListener('change', saveAuto);
+window.addEventListener('DOMContentLoaded',()=>{
+  const raw=localStorage.getItem(SKEY);
+  if(raw){ try{ restoreData(JSON.parse(raw)); }catch{} }
+  else { addComp();addComp();addSem();addElm(); }
+});
+</script>
+
+  <!-- Service Worker -->
+  <script>
+    if('serviceWorker' in navigator){
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').catch(()=>{});
+      });
+    }
+    // Hide splash after load
+    window.addEventListener('DOMContentLoaded', () => {
+      setTimeout(() => {
+        const s = document.getElementById('splash');
+        if(s){ s.classList.add('hide'); setTimeout(()=>s.remove(), 700); }
+      }, 1800);
+    });
+  </script>
+</body>
+</html>
